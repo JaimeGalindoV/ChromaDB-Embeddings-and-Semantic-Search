@@ -1,13 +1,16 @@
 import os
-
+import json
 import chromadb
 from chromadb.config import Settings
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(DIR, 'data')
 chroma_client = chromadb.PersistentClient(path=DB_PATH, settings=Settings(allow_reset=True, anonymized_telemetry=False))
-sample_collection = chroma_client.get_or_create_collection(name="JaimeGalindo_collection")
 
+# Create a new collection with your name (replace <your_name> with your actual name: "<your_name>_collection".
+JaimeGalindo_collection = chroma_client.get_or_create_collection(name="JaimeGalindo_collection")
+
+# Insert at least 50 documents related to any topic you like (e.g., technology, sports, nature).
 documents = [
     "Mars is known as the Red Planet due to its iron-rich soil and thin atmosphere.",
     "The Amazon Rainforest produces 20% of the Earth's oxygen and is home to millions of species.",
@@ -62,14 +65,82 @@ documents = [
     "Self-driving cars use lidar and computer vision to navigate roads autonomously.",
     "The NBA's three-point line was introduced in 1979 to increase scoring variety."
 ]
+
+# Provide appropriate metadata for each document (example: { "topic": "technology" }).
 metadatas = [{"category": "Space"},{"category": "Nature"},{"category": "Technology"},{"category": "Sports"},{"category": "History"},{"category": "Movies"},{"category": "Health"},{"category": "Art"},{"category": "Space"},{"category": "Nature"},{"category": "Technology"},{"category": "Sports"},{"category": "History"},{"category": "Movies"},{"category": "Health"},{"category": "Art"},{"category": "Space"},{"category": "Nature"},{"category": "Technology"},{"category": "Sports"},{"category": "History"},{"category": "Movies"},{"category": "Health"},{"category": "Art"},{"category": "Space"},{"category": "Nature"},{"category": "Technology"},{"category": "Sports"},{"category": "History"},{"category": "Movies"},{"category": "Health"},{"category": "Art"},{"category": "Space"},{"category": "Nature"},{"category": "Technology"},{"category": "Sports"},{"category": "History"},{"category": "Movies"},{"category": "Health"},{"category": "Art"},{"category": "Space"},{"category": "Nature"},{"category": "Technology"},{"category": "Sports"},{"category": "History"},{"category": "Movies"},{"category": "Health"},{"category": "Art"},{"category": "Space"},{"category": "Nature"},{"category": "Technology"},{"category": "Sports"}]
 
 ids = ["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52"]
 
-sample_collection.add(documents=documents, metadatas=metadatas, ids=ids)
+JaimeGalindo_collection.add(documents=documents, metadatas=metadatas, ids=ids)
 
-query_result = sample_collection.query(query_texts="Give me some facts about space", n_results=4)
+# Create a simple text-based user interface:
+# Ask the user to input a query and return the most relevant documents from the collection.
+query = input("Enter your query: ")
+query_result = JaimeGalindo_collection.query(query_texts=query, n_results=4)
+# query_result = JaimeGalindo_collection.query(query_texts="Give me some facts about space", n_results=4)
+
 result_documents = query_result["documents"][0]
 
 for doc in result_documents:
     print(doc)
+
+
+# Investigate how to modify/update existing data and provide an example in your code base on how to do it.
+# Update a document in ChromaDB
+input("Press Enter to update a document...")
+# New content and metadata for the document with chosen_id
+new_content = "Mars has two moons, Phobos and Deimos, which are thought to be captured asteroids."
+new_metadata = {"category": "Space"}
+chosen_id = "1"  # ID of the document to update
+
+existing_doc = JaimeGalindo_collection.get(ids=[chosen_id])
+if not existing_doc or len(existing_doc["documents"]) == 0:
+    raise ValueError("Document not found.")
+
+doc = {
+    "ids": existing_doc.get("ids", []),
+    "documents": existing_doc.get("documents", []),
+    "metadatas": existing_doc.get("metadatas", [])
+}
+print(f"Existing document: \n{json.dumps(doc, indent=2)} \n")
+
+# Update the document in ChromaDB
+JaimeGalindo_collection.update(
+    ids=[chosen_id],
+    documents=[new_content],
+    metadatas=[new_metadata],
+)
+print("Document updated successfully.")
+existing_doc = JaimeGalindo_collection.get(ids=[chosen_id])
+doc = {
+    "ids": existing_doc.get("ids", []),
+    "documents": existing_doc.get("documents", []),
+    "metadatas": existing_doc.get("metadatas", [])
+}
+print(f"Updated document: \n{json.dumps(doc, indent=2)} \n")
+
+
+# Investigate how to delete a subset of documents and provide an example in your code base on how to do it.
+input("Press Enter to delete a documents by groups of IDs...")
+# Delete a group of documents in ChromaDB by their IDs
+chosen_ids = ["1", "2", "3"]  # ID of the document to delete
+JaimeGalindo_collection.delete(ids=chosen_ids)
+print(f"Document with ID {chosen_ids} deleted successfully.")
+
+input("Press Enter to delete a documents by metadata...")
+# Delete documents in ChromaDB by their metadata
+# Example: Delete documents with metadata category "Space"
+JaimeGalindo_collection.delete(where={"category": {"$eq": "Space"}})
+print("Documents with metadata category 'Space' deleted successfully.")
+# You can check the remaining documents in the collection
+print(JaimeGalindo_collection.get())
+
+input("Press Enter to delete all documents...")
+# Delete all documents in ChromaDB
+# Obtain all IDs in the collection and delete them
+all_ids = JaimeGalindo_collection.get()["ids"]
+JaimeGalindo_collection.delete(ids=all_ids)
+
+print("All documents deleted successfully.")
+# You can check the collection to confirm that it's empty
+print(f"Collection after elimination of all documents: \n{JaimeGalindo_collection.get()}")
