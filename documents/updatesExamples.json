@@ -1,0 +1,25 @@
+[
+    {
+        "ids": [
+            "7d74101439f2530e2786f3e1a957583294310d7c79ed919c208e2226fec27498",
+            "f42e6176856db64bf9c79de789f48824bee35b10a60144ea0b57b65d7723f60c",
+            "b720ab5eb6b6999b4d3e51ff6b0fb82c85893dc80cbebae3284c9690663b4ba3"
+        ],
+        "content": [
+            "Artificial intelligence is revolutionizing industries like healthcare and finance through machine learning algorithms.",
+            "Lionel Messi holds the record for most goals scored in a calendar year (91 goals in 2012).",
+            "The Industrial Revolution began in Britain in the late 18th century, transforming manufacturing processes."
+        ],
+        "metadata": [
+            {
+                "category": "Technology"
+            },
+            {
+                "category": "Sports"
+            },
+            {
+                "category": "History"
+            }
+        ]
+    }
+]

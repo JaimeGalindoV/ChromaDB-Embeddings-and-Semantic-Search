@@ -3,12 +3,10 @@ import json
 import falcon.asgi
 import hashlib
 
-
 from chromadb import Client
 from chromadb.config import Settings 
 from sentence_transformers import SentenceTransformer
 from transformers import pipeline
-
 
 
 # Initialize ChromaDB
@@ -20,7 +18,6 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Load the model once at the application start
 qa_pipeline = pipeline("question-answering", model="deepset/roberta-base-squad2")
-
 
 def generate_id(content):
     return hashlib.sha256(content.encode('utf-8')).hexdigest()
@@ -36,6 +33,7 @@ class KnowledgeResource:
             request_data = json.loads(raw_json)
 
             # # Extraer contents y metadatas
+            ids = request_data["ids"]
             documents = request_data["contents"]
             metadatas = request_data["metadata"]
 
@@ -45,10 +43,18 @@ class KnowledgeResource:
             doc_ids = []
             to_remove_idx = []
 
-
+            # Check if document ids are provided, if not generate them
+            if ids is None or len(ids) == 0:
+                generate_ids = True
+            else:  
+                generate_ids = False
+            
             # Generate document ids, check for duplication
             for i in range(len(documents)):
-                doc_id = generate_id(documents[i])
+                if generate_ids:
+                    doc_id = generate_id(documents[i])
+                else:
+                    doc_id = ids[i]
                 results = collection.get(ids=[doc_id])
                 if not results or len(results["documents"]) == 0:
                     doc_ids.append(doc_id)
@@ -60,6 +66,7 @@ class KnowledgeResource:
             for idx in sorted(to_remove_idx, reverse=True):
                 del documents[idx]
                 del metadatas[idx]
+                del ids[idx]
     
             # Upload documents
             if len(documents) > 0:
@@ -89,6 +96,38 @@ class KnowledgeResource:
                 })
 
             resp.media = response
+            resp.status = falcon.HTTP_200
+        except Exception as e:
+            resp.media = {"error": str(e)}
+            resp.status = falcon.HTTP_400
+
+
+class SingleKnowledgeResource:
+    async def on_put(self, req, resp, id):
+        """
+        Handle PUT requests to update a document by ID
+        """
+        try:
+            raw_json = await req.bounded_stream.read()
+            request_data = json.loads(raw_json)
+
+            # Extraer nuevos datos
+            new_content = request_data.get("content")
+            new_metadata = request_data.get("metadata")
+
+            # Verificar si el documento existe
+            existing_doc = collection.get(ids=[id])
+            if not existing_doc or len(existing_doc["documents"]) == 0:
+                raise ValueError("Document not found.")
+
+            # Actualizar el documento en ChromaDB
+            collection.update(
+                ids=[id],
+                documents=[new_content],
+                metadatas=[new_metadata],
+            )
+
+            resp.media = {"message": "Document updated successfully."}
             resp.status = falcon.HTTP_200
         except Exception as e:
             resp.media = {"error": str(e)}
@@ -148,3 +187,4 @@ class QueryResource:
 app = falcon.asgi.App()
 app.add_route("/query", QueryResource())
 app.add_route("/knowledge", KnowledgeResource())
+app.add_route("/knowledge/{id}", KnowledgeResource())

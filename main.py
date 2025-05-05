@@ -10,9 +10,11 @@ KNOWLEDGE_ENDPOINT = "knowledge"
 QUERY_ENDPOINT = "query"
 
 # Create a new collection(s) in ChromaDB
-def upload_documents(file_path):
+def upload_documents(file_path, per_id="N"):
     endpoint = urljoin(BASE_URL, KNOWLEDGE_ENDPOINT)
     try:
+
+        ids = [] # List to store document personalized IDs
         contents = []
         metadatas = []
         data = {}
@@ -20,8 +22,12 @@ def upload_documents(file_path):
         with open(file_path, 'r') as file:
             documents = json.load(file)
             for doc in documents:
+                if per_id == "Y" or per_id == "y":
+                    # If per_id is 'Y', use the personalized ID from the document
+                    ids.append(doc["id"]) 
                 contents.append(doc["content"])
                 metadatas.append(doc["metadata"])
+            data["ids"] = ids
             data["contents"] = contents
             data["metadata"] = metadatas
             # data = json.dumps(data)
@@ -58,6 +64,7 @@ def main():
     # Subparser for upload action
     upload_parser = subparsers.add_parser('upload', help="Upload a document")
     upload_parser.add_argument('--path', required=True, help="Path of the document to upload")
+    upload_parser.add_argument('--per-id', required=False, help="'Y' for personaliced id in the documents to upload, 'N' or none for default id")
 
     # Subparser for chat query action
     query_parser = subparsers.add_parser('query', help="Chat query")
@@ -66,12 +73,12 @@ def main():
     args = parser.parse_args()
 
     if args.action == 'upload':
-        upload_documents(args.path)
+        upload_documents(args.path, args.per_id)
     elif args.action == 'query':
         chat_query(args.query)
 
     else:
-        print("Invalid action. Please use 'upload', 'get', or 'query'.")
+        print("Invalid action. Please use 'upload', 'update', or 'query'.")
 
 
 if __name__ == "__main__":
